@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>LazyDuck</title>
+</head>
+<body>
+
+<h2>LazyDuck Form Access</h2>
+<a href="javascript:runSets()">Run Sets</a>
+<form id="formAccess" class="LDForm">
+	<p>Text</p>
+	<input name="input1" type="text">
+	<br>
+
+	<p>Radio</p>
+	<label><input name="radio1" type="radio" value="chicken"> Chicken</label>
+	<label><input name="radio1" type="radio" value="pizza"> Pizza</label>
+	<label><input name="radio1" type="radio" value="noodle"> Noodle</label>
+
+	<p>Checkbox Singular</p>
+	<label><input name="check1" type="checkbox" value="taylor"> Taylor Swift</label>
+	<label><input name="check1" type="checkbox" value="eminem"> Eminem</label>
+	<label><input name="check1" type="checkbox" value="tiesto"> Tiesto</label>
+
+	<p>Checkbox Plural</p>
+	<label><input name="check2" type="checkbox" value="taylor"> Taylor Swift</label>
+	<label><input name="check2" type="checkbox" value="eminem"> Eminem</label>
+	<label><input name="check2" type="checkbox" value="tiesto"> Tiesto</label>
+
+	<p>Select</p>
+	<select name="select1">
+		<option value="trance">Trance</option>
+		<option value="techno">Techno</option>
+		<option value="hardstyle">Hard style</option>
+		<option value="house">House</option>
+	</select>
+</form>
+
+<br>
+<h2>The Results</h2>
+<a href="javascript:runGets()">Run Gets</a>
+<a href="javascript:printConsoles()">Print in console</a>
+<p>Text : <span id="viewInput1"></span></p>
+<p>Radio : <span id="viewRadio1"></span></p>
+<p>Checkbox Singular : <span id="viewCheck1"></span></p>
+<p>Checkbox Plural : <span id="viewCheck2"></span></p>
+<p>Select : <span id="viewSelect1"></span></p>
+
+</body>
+
+<script type="text/javascript" src="./dependencies/jquery-2.1.4.min.js"></script>
+<script type="text/javascript" src="./dependencies/underscore-min.js"></script>
+<script type="text/javascript" src="./lazyduck.js"></script>
+
+<script type="text/javascript">
+	$(function() {
+		// -- Initialize
+		LD.invoke();
+	});
+
+	function runSets() {
+		// -- Sets
+		LD.formAccess.input1 = 'Text set by lazyduck';
+		LD.formAccess.radio1 = 'chicken';
+		LD.formAccess.check1 = 'tiesto';
+		LD.formAccess.check2 = ['taylor', 'tiesto'];
+		LD.formAccess.select1 = 'hardstyle';
+	}
+
+	function runGets() {
+		// -- Gets
+		$("#viewInput1").text(LD.formAccess.input1);
+		$("#viewRadio1").text(LD.formAccess.radio1);
+		$("#viewCheck1").text(LD.formAccess.check1);
+		$("#viewCheck2").text(LD.formAccess.check2);
+		$("#viewSelect1").text(LD.formAccess.select1);
+	}
+
+	function printConsoles() {
+		console.log(LD.formAccess.input1);
+		console.log(LD.formAccess.radio1);
+		console.log(LD.formAccess.check1);
+		console.log(LD.formAccess.check2);
+		console.log(LD.formAccess.select1);
+	}
+</script>
+</html>
