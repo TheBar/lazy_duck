@@ -1,24 +1,26 @@
 JQuery Library LazyDuck
 
-JQuery ±â¹İ ÀæÀº ±â´É ÄÚµå ´ÜÃàÀ» ¸ñÇ¥·ÎÇÔ
+JQuery ê¸°ë°˜ ì¦ì€ ê¸°ëŠ¥ ì½”ë“œ ë‹¨ì¶•ì„ ëª©í‘œë¡œí•¨
 
 Dependency :
 JQuery 1.x / 2.x
 underscore.js
 
-±¸¼º :
-1. JQuery È®Àå ÄÚµå
+êµ¬ì„± :
+1. JQuery í™•ì¥ ì½”ë“œ
 2. LDForm
 3. LDArea
 4. LDData
 
-¿¹ :
+ì˜ˆ :
 
 html
 ----
+<xmp>
 <form id="formCreate" class="LDForm">
 	<input type="text" name="search" />
 </form>
+</xmp>
 
 js
 ----
@@ -32,3 +34,6 @@ $(function() {
 console
 ----
 'The search value'
+
+Live Example
+http://dm1430720111901.fun25.co.kr/lazyduck/
