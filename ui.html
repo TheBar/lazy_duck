@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>LazyDuck UI</title>
+	<style>
+		.box-selected {
+			background: #999999
+		}
+	</style>
+</head>
+<body>
+<a href="index.html">LazyDuck</a>
+
+<h2>LazyDuck UI</h2>
+
+<h3>LDCheckToggle</h3>
+<label><input type="checkbox" name="chkToggle" value="ALL">ALL</label>
+<label><input type="checkbox" name="chkToggle" value="Value1">Value1</label>
+<label><input type="checkbox" name="chkToggle" value="Value2">Value2</label>
+<label><input type="checkbox" name="chkToggle" value="Value3">Value3</label>
+<label><input type="checkbox" name="chkToggle" value="Value4">Value4</label>
+
+<h3>LDOrder</h3>
+<table>
+	<thead>
+	<tr>
+		<th class="LDOrderList" data-name="no">No</th>
+		<th>Title</th>
+		<th class="LDOrderList" data-name="date">Date</th>
+		<th class="LDOrderList" data-name="order">Order</th>
+	</tr>
+	</thead>
+	<tbody>
+	<tr>
+		<td>1</td>
+		<td>Title1</td>
+		<td>2016-05-05</td>
+		<td>10</td>
+	</tr>
+	<tr>
+		<td>2</td>
+		<td>Title2</td>
+		<td>2016-05-05</td>
+		<td>9</td>
+	</tr>
+	<tr>
+		<td>3</td>
+		<td>Title3</td>
+		<td>2016-05-04</td>
+		<td>8</td>
+	</tr>
+	</tbody>
+</table>
+
+<h3>LDTags</h3>
+<h4>Sibling will be added as hidden</h4>
+<div id="areaTags"></div>
+<input name="tagsInput" type="text" placeholder="TAGS) Any words..." data-template="#templateTags" data-name="tags" data-view="#areaTags"/>
+
+<script type="text/html" id="templateTags">
+	<p class="onClickTags" style="cursor: pointer" data-value="<%= input %>"><%= input %></p>
+</script>
+
+<h3>LDCategories Original - with checkbox</h3>
+<input type="text" name="categoriesOrigin" data-template="#templateCategoriesOrigin" data-kv='["fashion", "beauty", "hello", "austin"]' data-view="#areaCategoriesOrigin"/>
+<div id="areaCategoriesOrigin"></div>
+
+<script type="text/html" id="templateCategoriesOrigin">
+	<label><input type="checkbox" value="<%= k %>" class="LDCategories"><%= v %></label>
+</script>
+
+
+<h3>LDCategories Custom</h3>
+<input type="text" name="categories" data-template="#templateCategories" data-kv='["fashion", "beauty", "hello", "austin"]' data-view="#areaCategories" data-custom="pilarCheck"/>
+<div id="areaCategories"></div>
+
+<script type="text/html" id="templateCategories">
+	<a class="LDCategoriesCustom" href="javascript:;" data-value="<%= k %>">
+		<span><%= v %></span>
+	</a>
+</script>
+
+<h3>LDRadio</h3>
+<input type="text" name="sex" data-template="#templateGender" data-kv='{"m": "male", "f": "female"}' data-view="#areaGender" data-custom="pilarRadio">
+<div id="areaGender"></div>
+
+<script type="text/html" id="templateGender">
+	<a class="LDRadio" href="javascript:;" data-value="<%= k %>">
+		<span><%= v %></span>
+	</a>
+</script>
+
+<script type="text/javascript" src="./dependencies/jquery-2.1.4.min.js"></script>
+<script type="text/javascript" src="./dependencies/underscore-min.js"></script>
+<script type="text/javascript" src="./lazyduck.js"></script>
+<script type="text/javascript" src="./lazyduck_ui.js"></script>
+
+<script type="text/javascript">
+	$(function() {
+
+		// -- LDCheckToggle, When given value is check, all others will be checked
+		$("input[name='chkToggle']").LDCheckToggle('ALL');
+
+		// -- LDOrder
+		// -- Only support append with its object but can modify if its necessary
+		var order = new LDOrder();
+		order.invoke({
+			selector: '.LDOrderList',
+			asc: '<span>-order ASC-</span>',
+			desc: '<span>-order DESC-</span>',
+			onChange: function(name, order) {
+				console.log('onChange', name, order);
+			}
+		});
+		order.setOrder('no', 'desc');
+
+		// -- LDTags
+		var tags = new LDTags();
+		tags.invoke($("input[name='tagsInput']"));
+
+		// -- LDCategories - Origin, doesn't need any custom object
+		var categoriesOrigin = $("input[name='categoriesOrigin']").LDCategories();
+
+		// -- LDCategories - Custom
+		var categories = $("input[name='categories']").LDCategories();
+		categories.setChecked(['fashion', 'hello']);
+		categories.setChecked(['fashion'], false);
+
+		// -- LDRadio
+		var gender= $("input[name='sex']").LDRadio();
+		gender.setChecked('f');
+
+	});
+
+	// -- LDCategories
+	var pilarCheck = {
+		isChecked: function(JQObj) {
+			return JQObj.hasClass('box-selected');
+		},
+
+		setChecked: function(JQObj, checked) {
+			if(checked)
+				JQObj.addClass('box-selected');
+			else
+				JQObj.removeClass('box-selected');
+		},
+
+		// -- you may set check if its necessary
+		onClick: function(JQObj) {
+			this.setChecked(JQObj, !this.isChecked(JQObj));
+		},
+
+		// -- onchange event when status already changed
+		onChange: function(JQObj) {
+
+		}
+	};
+
+	var pilarRadio = {
+		isChecked: function(JQObj) {
+			return JQObj.hasClass('box-selected');
+		},
+
+		setChecked: function(JQObj, checked) {
+			if(checked)
+				JQObj.addClass('box-selected');
+			else
+				JQObj.removeClass('box-selected');
+		},
+
+		// -- you may set check if its necessary
+		onClick: function(JQObj) {
+		},
+
+		// -- onchange event when status already changed
+		onChange: function(JQObj) {
+
+		}
+	};
+</script>
+</body>
+</html>

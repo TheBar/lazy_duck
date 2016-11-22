@@ -339,6 +339,51 @@ $.fn.toJSON = function(validate, includeEmpty) {
 };
 
 /**
+ * LDAttribute
+ * to help parse attributes
+ * @constructor
+ */
+var LDAttribute = function() {
+};
+
+// -- data-key-value
+/**
+ * parse [], {}, 'str'
+ * @param str
+ * @return {} / boolean
+ */
+LDAttribute.prototype.parseKV = function(str) {
+	var result = [];
+	var any = str;
+
+	if('{' == any[0] || '[' == any[0]) {
+		any = JSON.parse(any);
+	}
+
+	if(_.isArray(any)) {
+		if (_.isString(any[0])) {
+			_.each(any, function (v) {
+				result.push({k: v, v: v});
+			});
+		} else if (_.isObject(any[0])) {
+			result = any;
+		}
+	} else if(_.isObject(any)) {
+		_.each(any, function(v, k) {
+			result.push({k: k, v: v});
+		});
+	} else if(_.isString(any)) {
+		result.push({k: any, v: any});
+	} else {
+		return false;
+	}
+
+	return result;
+};
+
+var LDAttr = new LDAttribute();
+
+/**
  * Easy access to the JQ Object
  * var form = new LDForm($("#form");
  * form.debug(); // -- to see the list of properties
@@ -448,6 +493,15 @@ LDForm.prototype.debug = function() {
 	console.log(this.listNames);
 };
 
+// -- ignore submit request by setting attribute data-prevent="true"
+LDForm.prototype.preventSubmit = function() {
+	this.obj.attr('data-prevent-submit', 'true');
+};
+
+LDForm.prototype.allowSubmit = function() {
+	this.obj.attr('data-prevent-submit', '');
+};
+
 // -- Creates LDForm object from this object
 $.fn.LDForm = function() {
 	var ldForm = new LDForm(this);
@@ -502,6 +556,12 @@ LDArea.prototype.invoke = function(JQObj) {
 	}
 
 	_.each(this.template, function(selector, key) {
+		var obj = $(selector);
+		if(0 == obj.length) {
+			console.error('failed to find template : ' + selector);
+			return;
+		}
+
 		me.template[key] = _.template($(selector).html());
 	});
 };
@@ -649,6 +709,20 @@ LDArea.prototype.setOnItem = function(cb) {
 	}
 };
 
+LDArea.prototype.show = function(show) {
+	if('undefined' == typeof show)
+		show = true;
+
+	if(true === show)
+		this.obj.show();
+	else
+		this.obj.hide();
+};
+
+LDArea.prototype.hide = function() {
+	this.show(false);
+};
+
 var LDDataSource = function() {
 	this.list = null;
 	this.data = null;
@@ -713,6 +787,8 @@ LDD.data = function(data) {
 	return LDD;
 };
 
+// -- To render a empty rendering use this LDD.empty as dataSource
+LDD.empty = LDD.data({});
 
 LazyDuck = function() {
 	this.prefix = "LD";
@@ -730,8 +806,6 @@ LazyDuck = function() {
 };
 
 LazyDuck.prototype.invoke = function(options) {
-	var me = this;
-
 	// -- Options
 	if(options) {
 		if(options.prefix) {
@@ -751,9 +825,27 @@ LazyDuck.prototype.invoke = function(options) {
 		}
 	}
 
+	this.reinvoke();
+};
+
+LazyDuck.prototype.reinvoke = function() {
+	var me = this;
 	var classForm = '.' + this.prefix + this.postForm;
 	var classArea = '.' + this.prefix + this.postArea;
 	var classTemplate = '.' + this.prefix + this.postTemplate;
+
+	// -- LD itself just JQuery object
+	$('.' + this.prefix).each(function() {
+		var self = $(this);
+		var id = self.attr('id');
+
+		var name = self.attr(me.DATA_NAME);
+
+		if(name)
+			id = name;
+
+		me[id] = self;
+	});
 
 	// -- LDForm
 	$(classForm).each(function() {
@@ -951,10 +1043,15 @@ $.fn.submitAjax = function(success, failure, submitNow, opt) {
 
 		var url = me.attr('action');
 		var type = me.attr('method');
+		var preventSubmit = me.attr('data-prevent-submit');
 		var data = me.toJSON();
 
 		// -- Validation failed
 		if(!data)
+			return;
+
+		// -- Prevent to submit
+		if('true' == preventSubmit)
 			return;
 
 		// -- Before submit callback
@@ -1022,12 +1119,24 @@ $.fn.submitAjax = function(success, failure, submitNow, opt) {
 	return true;
 };
 
+// -- process before submit and confirm only
 $.fn.submitConfirm = function() {
 	var me = (this);
 	me.off('submit'); // -- should remove the event
 
 	me.submit(function(event) {
 
+		// -- Before submit callback
+		var beforeSubmit = me.attr('data-before-submit');
+		if(beforeSubmit && 0 < beforeSubmit.length) {
+			var ret = eval(beforeSubmit);
+			if(false === ret) {
+				event.preventDefault();
+				return false;
+			}
+		}
+
+		// -- data-conform
 		var message = me.attr('data-confirm');
 		if(message && 0 < message.length) {
 			if(!confirm(message)) {
@@ -1040,4 +1149,23 @@ $.fn.submitConfirm = function() {
 	});
 
 	return true;
+};
+var LDAssert = {
+	assert: function(condition, message) {
+	if (!condition) {
+		message = message || "Assertion failed";
+		if (typeof Error !== "undefined") {
+			throw new Error(message);
+		}
+			throw message; // Fallback
+		}
+	},
+
+	notEmpty: function(any, message) {
+		LDAssert.assert(any && 0 < any.length, message);
+	},
+
+	notZero: function(any, name) {
+		LDAssert.assert(any && 0 != any, message);
+	}
 };

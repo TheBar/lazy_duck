@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>LazyDuck Lang</title>
+</head>
+<body>
+<a href="index.html">LazyDuck</a>
+
+<h2>LDLang</h2>
+<p>class, data-lang 에 설정된 값대로 데이터를 편집할수 있음</p>
+<p>url_get / url_set으로 api가 만들어져 있어야 한다.</p>
+<p>CN KR EN 이 들어가 있는데, 이는 사전에 지정한 내용임</p>
+<p>submitAjaxTL이 없는데 submitAjax의 자식 버젼이라고 볼수 있음, 현재는 이 버젼대로 업로드함</p>
+<p>아래의 텍스트를 누르면 편집창이 나오고, submit을 하면 서버로 전송함</p>
+<p>refresh를 하면 해당 id의 값으로 변환함, 실제는 php에서 값을 뿌리는것을 권장, refresh는 단지 확인용임</p>
+
+<p class="LDLang" data-lang="CONTACT.head1">Let's make something great</p>
+<p class="lead LDLang" data-lang="CONTACT.head2">Pillar is a team of passionate designers, developers and artists working in print and digital. We collaborate with clients to establish bold, effective identities.</p>
+<p class="LDLang" data-lang="CONTACT.GiveUsCall">Give us a call</p>
+
+<script type="text/javascript" src="./dependencies/jquery-2.1.4.min.js"></script>
+<script type="text/javascript" src="./dependencies/underscore-min.js"></script>
+<script type="text/javascript" src="./lazyduck.js"></script>
+<script type="text/javascript" src="./lazyduck_lang.js"></script>
+
+<script type="text/javascript">
+	$(function() {
+		LDLang.invoke($('.LDLang') ,{
+			url_get: "{{ url('personalanguage/api_get_lang') }}",
+			url_set: "{{ url('personalanguage/api_set_lang') }}",
+			edit: true,
+			default_lang: 'KR'
+		});
+
+		LDLang.refresh();
+	});
+</script>
+</body>
+</html>
