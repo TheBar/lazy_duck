@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>LazyDuck UI</title>
+	<style>
+		.box-selected {
+			background: #999999
+		}
+	</style>
+</head>
+<body>
+<a href="index.html">LazyDuck</a>
+
+<div id="areaResult" class="LDArea" data-template="#templateItem"></div>
+
+<div id="areaGeneral" class="LDArea"></div>
+
+<script id="templateItem" type="text/html" class="LDTemplate">
+<ul data-id="<%= id %>">
+	<li>name : <%= item.name %></li>
+	<li>price : <span data-name="price"><%= item.price %></span></li>
+	<select onchange="LD.onChangeOption('<%= id %>', this.value)">
+		<% _.each(item.list, function(d, k) { %>
+		<option value="<%= k %>"><%= d %></option>
+		<% }); %>
+	</select>
+</ul>
+</script>
+
+<script type="text/javascript" src="./dependencies/jquery-2.1.4.min.js"></script>
+<script type="text/javascript" src="./dependencies/underscore-min.js"></script>
+<script type="text/javascript" src="./lazyduck.js"></script>
+<script type="text/javascript">
+	var list = [
+		{
+			name: 'Name one',
+			price: 2000,
+			list: [
+				'hello', 'tv', 'video'
+			]
+		},
+		{
+			name: 'Name two',
+			price: 5000,
+			list: [
+				'hola', 'audio'
+			]
+		}
+	];
+
+	$(function() {
+		LD.invoke();
+
+//		render();
+		renderGeneral();
+	});
+
+	function render() {
+		var dataSource = LDD.list(list);
+		LD.areaResult.setDataSource(dataSource);
+	}
+
+	function renderGeneral() {
+		var v1 = LD.templateItem({item: list[0]});
+		var v2 = LD.templateItem({item: list[1]});
+
+		LD.areaGeneral.obj.append(v1);
+		LD.areaGeneral.obj.append(v2);
+	}
+
+	// -- LD has getView, getValue method in it!! so you can
+	// -- getView does not register its view with LD it always select whenever its called
+	// -- no method to clear the value, later on if its necessary
+	LD.onChangeOption = function(id, value) {
+		var view = this.getView(id);
+		console.log(this.getValue(id));
+		view.find('[data-name="price"]').text(50000);
+	};
+
+</script>
+
+</body>
+</html>

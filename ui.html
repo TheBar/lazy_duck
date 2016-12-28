@@ -70,7 +70,6 @@
 	<label><input type="checkbox" value="<%= k %>" class="LDCategories"><%= v %></label>
 </script>
 
-
 <h3>LDCategories Custom</h3>
 <input type="text" name="categories" data-template="#templateCategories" data-kv='["fashion", "beauty", "hello", "austin"]' data-view="#areaCategories" data-custom="pilarCheck"/>
 <div id="areaCategories"></div>
@@ -91,10 +90,37 @@
 	</a>
 </script>
 
+<h3>LDRadio2</h3>
+<label><input type="radio" name="gender" value="m" title="Male">Male</label>
+<label><input type="radio" name="gender" value="f" title="Female">Female</label>
+
+<script type="text/html" id="templateGender2">
+	<a href="javascript:;" data-value="<%= k %>">
+		<span><%= v %></span>
+	</a>
+</script>
+
+<div id="viewGender2"></div>
+
+<div id="viewGender3"></div>
+
+<h3>LDUIGeneral</h3>
+<div id="viewGeneral"></div>
+
+<h3>LDUIGeneral JQObject</h3>
+<label><input type="radio" name="testGeneralObject" value="0" title="Zero">Zero</label>
+<label><input type="radio" name="testGeneralObject" value="1" title="One">One</label>
+<label><input type="radio" name="testGeneralObject" value="2" title="Two">Two</label>
+<label><input type="radio" name="testGeneralObject" value="3" title="Three">Three</label>
+<label><input type="radio" name="testGeneralObject" value="4" title="Four">Four</label>
+<div id="viewGeneralObject"></div>
+
 <script type="text/javascript" src="./dependencies/jquery-2.1.4.min.js"></script>
 <script type="text/javascript" src="./dependencies/underscore-min.js"></script>
 <script type="text/javascript" src="./lazyduck.js"></script>
 <script type="text/javascript" src="./lazyduck_ui.js"></script>
+<!-- project custom file -->
+<script type="text/javascript" src="./lazyduck_project.js"></script>
 
 <script type="text/javascript">
 	$(function() {
@@ -116,8 +142,7 @@
 		order.setOrder('no', 'desc');
 
 		// -- LDTags
-		var tags = new LDTags();
-		tags.invoke($("input[name='tagsInput']"));
+		var tags = $("input[name='tagsInput']").LDTags();
 
 		// -- LDCategories - Origin, doesn't need any custom object
 		var categoriesOrigin = $("input[name='categoriesOrigin']").LDCategories();
@@ -131,6 +156,7 @@
 		var gender= $("input[name='sex']").LDRadio();
 		gender.setChecked('f');
 
+		// -- LDRadio2
 	});
 
 	// -- LDCategories
@@ -178,6 +204,51 @@
 
 		}
 	};
+
+	var gender = new LDUIRadio({
+		view: $('#viewGender2'),
+		dataSource: $("input[name='gender']")
+	});
+
+	var genderThree = $('#viewGender3').LDUIRadio({ dataSource: {m: 'male', f: 'Female'} });
+
+	var testGeneral = new LDUIGeneral();
+	testGeneral.invoke({
+		dataSource: [1, 2, 3, 4, 5],
+		render: function(item, key, list, opts, parent) {
+			return '<p>dataSource['+ key + '] : ' + item + '</p>';
+		},
+		onRenderedObj: function(item, key, list, opts, parent) {
+			item.css('cursor', 'pointer');
+			item.click(function() {
+				alert('item text ' + item.text() + 'has Clicked which is index of ' + key + ' from length ' + list.length);
+			});
+		},
+		view: $('#viewGeneral')
+	});
+
+	var testGeneralObj = new LDUIGeneral();
+	testGeneralObj.invoke({
+		dataSource: $('input[name="testGeneralObject"]'),
+		render: function(item, key, list, opts, parent) {
+			var obj = $(item);
+			var value = obj.val();
+			var title = obj.attr('title');
+
+			return '<p>' + title + ':' + value + '</p>';
+		},
+		onRenderedObj: function(item, key, list, opts, parent) {
+			item.css('cursor', 'pointer');
+			item.click(function() {
+				alert('item text ' + item.text() + 'has Clicked which is index of ' + key + ' from length ' + list.length);
+			});
+		},
+		view: $('#viewGeneralObject')
+
+	});
+
+	// TODO Radio 기능 구현, Check, Category 구현 후 Commit 하기
+
 </script>
 </body>
 </html>

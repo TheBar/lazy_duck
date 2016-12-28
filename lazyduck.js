@@ -26,7 +26,7 @@ $.fn.setV = function(value, byForce) {
 	if('input' == tagName)
 		type = self.attr("type");
 
-	if('hidden' == type || 'text' == type || 'textarea' == type || 'date' == type) {
+	if('hidden' == type || 'text' == type || 'textarea' == type || 'date' == type || 'email' == type || 'password' == type) {
 		self.val(value);
 		return true;
 	} else if('select' == type) {
@@ -562,7 +562,7 @@ LDArea.prototype.invoke = function(JQObj) {
 			return;
 		}
 
-		me.template[key] = _.template($(selector).html());
+		me.template[key] = _.templateLD($(selector).html());
 	});
 };
 
@@ -790,6 +790,65 @@ LDD.data = function(data) {
 // -- To render a empty rendering use this LDD.empty as dataSource
 LDD.empty = LDD.data({});
 
+// -- Data + View or you can add more things with id
+var LDDataView = function() {
+	this.map = {};
+
+	this._genId = 1;
+	this._lastGenId = null;
+	this.prefix = 'LDID';
+};
+
+LDDataView.prototype.gen = function(value, includeInValue) {
+	var id = this.prefix + '_' + this._genId;
+	this._genId = this._genId + 1;
+
+	this._lastGenId = id;
+
+	if(value) {
+		this.setValue(value, id);
+		if(includeInValue)
+			value.id = id;
+	}
+	return id;
+};
+
+LDDataView.prototype._initId = function(id) {
+	if(!this.map.hasOwnProperty(id)) {
+		this.map[id] = {};
+	}
+};
+
+LDDataView.prototype.getLastGen = function() {
+	return this._lastGenId;
+};
+
+LDDataView.prototype.setValue = function(value, id) {
+	// -- If no id - use last gen id
+	if(!id) {
+		id = this.getLastGen();
+	}
+
+	if(!id) {
+		return false;
+	}
+	this._initId(id);
+
+	this.map[id].value = value;
+};
+
+LDDataView.prototype.getView = function(id) {
+	var view = $('[data-id="' + id + '"]');
+	return view;
+};
+
+LDDataView.prototype.getValue = function(id) {
+	if(this.map.hasOwnProperty(id))
+		return this.map[id].value;
+
+	return false;
+};
+
 LazyDuck = function() {
 	this.prefix = "LD";
 	this.postForm = "Form";
@@ -803,6 +862,8 @@ LazyDuck = function() {
 
 	// -- List of extended Object types
 	this.listTypes = [];
+
+	this._dataView = new LDDataView();
 };
 
 LazyDuck.prototype.invoke = function(options) {
@@ -880,7 +941,7 @@ LazyDuck.prototype.reinvoke = function() {
 		if(name)
 			id = name;
 
-		me[id] = _.template(self.html());
+		me[id] = _.templateLD(self.html());
 	});
 
 	// -- User custom types
@@ -935,6 +996,24 @@ LazyDuck.prototype.createInstance = function() {
 	return instance;
 };
 
+// -- Data View
+LazyDuck.prototype.gen = function(value, includeInValue) {
+	return this._dataView.gen(value, includeInValue);
+};
+
+LazyDuck.prototype.setValue = function(value, id) {
+	return this._dataView.setValue(value, id);
+};
+
+LazyDuck.prototype.getView = function(id) {
+	return this._dataView.getView(id);
+};
+
+LazyDuck.prototype.getValue = function(id) {
+	return this._dataView.getValue(id);
+};
+
+
 var LD = new LazyDuck();
 
 // -- Creates LDArea object from this object
@@ -972,6 +1051,16 @@ _.mixin({
 
 		// -- Not found
 		return _.template(str);
+	},
+
+	// -- Enhance its value with { id: 'LDID_1' }, can use it as generated
+	templateLD: function(str) {
+		var __internal = _.template(str);
+		return function(value) {
+			var include = _.isObject(value);
+			LD.gen(value, include); // -- Save its value in LDID_X
+			return __internal(value); // -- Then return the templated view, you can use <%= id %> as you wish!
+		}
 	},
 
 	/**
@@ -1169,3 +1258,4 @@ var LDAssert = {
 		LDAssert.assert(any && 0 != any, message);
 	}
 };
+

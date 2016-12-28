@@ -646,3 +646,126 @@ $.fn.LDRadio = function(options) {
 	radio.invoke(this);
 	return radio;
 };
+
+
+/**
+ * Radio / Check / Category / Tag 등을 만들면서 공통적인 기능이 필요할것 같다는 생각이 들어 만들었다
+ * dataSource를 [] / JQObject 로 받아서 render 하는 기능이 주를 이룬다
+ * render 이후에 JQObject로 변환하여 data-ld-ui 번호를 부여하는 기능으로 테스트를 하였으나, 현재 별로 쓰이는곳은 없다
+ * click 이벤트등을 같이 걸기 위해 만들었으나, 크게 사용하지는 않는다.
+ * LDUIGeneral을 이용하여 Radio 기능을 구현해보았다.
+ * 여러가지 Radio 기능을 구현할수가 있는 장점이 있다.
+ * 현재는 options을 받아서 radio를 구현하였는데, setCheck 등을 구현하고, attribute를 통해 가져오는 새로운 Radio를 각 프로젝트별로 생성할수 있다.
+ * 기본이 되는 코드들을 만들어 놓고 프로젝트별로 구현하여 만든후
+ * 해당 인스턴스를 각각의 프로젝트에 적용하는 방식이 가장 적합할것으로 보인다.
+ *
+ * 아래에는 기본적인 사용법을 만들어놓았다. list 형 JQObj 형
+ * @constructor
+ */
+
+var LDUIGeneral = function() {
+	this.options = null;
+};
+
+LDUIGeneral.prototype.invoke = function(opts) {
+	var me = this;
+
+	// -- Assert
+	LDAssert.assert(opts, 'LDUIGeneral.invoke invalid option');
+	me.options = opts;
+
+	// -- Initialize
+	if(opts.hasOwnProperty('init')) {
+		opts.init(opts, me);
+	}
+
+	// -- DataSource loop
+	if(opts.hasOwnProperty('dataSource')) {
+		_.each(opts.dataSource, function (item, k, list) {
+
+			// -- Render
+			if(opts.hasOwnProperty('render')) {
+				// -- Expect this as string or JQObj, and string should be a TAG
+				var rendered = me.options.render(item, k, list, opts, me);
+
+				// -- Make it JQObject
+				if (_.isString(rendered))
+					rendered = $(rendered);
+
+				// -- Add Identifier
+				rendered.attr('data-ld-ui', k);
+
+				// -- onRenderedObj
+				if(opts.hasOwnProperty('onRenderedObj')) {
+					opts.onRenderedObj(rendered, k, list, opts, me)
+				}
+
+				// -- attach
+				if(opts.hasOwnProperty('view')) {
+					opts.view.append(rendered);
+				}
+				// -- DEBUG - if its failed, rendered may not be a tag form!!
+			}
+		});
+	}
+};
+
+var _thsBaseRadioOptions = {
+	render: function(item, key, list, opts, parent) {
+		// -- If item is object -> consider it as input radio object
+		if(_.isObject(item)) {
+			var obj = $(item);
+			var value = obj.val();
+			var title = obj.attr('title');
+
+			var r = opts.template({k: value, v: title});
+			return r;
+		} else {
+			// -- Otherwise its just key value
+			var r = opts.template({k: key, v: item});
+			return r;
+		}
+	},
+	onRenderedObj: function(item, key, list, opts, parent) {
+		item.click(function() {
+			opts.eventOnClick(item, key, list, opts, parent);
+		});
+	},
+
+	// -- Custom
+	eventOnClick: function(item, key, list, opts, parent) {
+		// -- ignore same click
+		if(opts.lastSelectedItem && opts.lastSelectedItem == item)
+			return;
+
+		var selectedBefore = opts.isSelected(item, key, list, opts, parent);
+		var selected = !selectedBefore;
+		opts.setSelected(item, selected);
+
+		// -- Save selected
+		if(selected) {
+			// -- Un-select last one
+			if(opts.lastSelectedItem) {
+				opts.setSelected(opts.lastSelectedItem, false);
+			}
+
+			opts.lastSelectedItem = item;
+
+			// -- set original value
+			opts.setOriginalValue(item.attr('data-value'), opts, parent);
+		}
+	},
+
+	setOriginalValue: function(value, opts, parent) {
+		// -- Only if it has 'filter' methods, which means its JQObject as dataSource
+		if(opts.dataSource instanceof jQuery)
+			opts.dataSource.filter('[value="' + value + '"]').prop('checked', true);
+	}
+};
+
+var LDUIRadio = function(customOptions) {
+	this.general = new LDUIGeneral();
+
+	this.radioOptions = _.extend(customOptions, _thsBaseRadioOptions);
+	this.general.invoke(this.radioOptions);
+};

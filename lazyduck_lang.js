@@ -85,6 +85,8 @@ LDLanguage.prototype.invoke = function(JQObj, options) {
 		if(success) {
 			me.hide();
 			alert('Success');
+
+			LDL.lastObj.val(LDL.formLangSet.data);
 		} else {
 			if('undefined' == typeof data) {
 				alert('Error while Setting with api, check you api permission.');
@@ -102,7 +104,7 @@ LDLanguage.prototype.invoke = function(JQObj, options) {
 			_.each(data.data.list, function(d) {
 				var key = d.parent + '.' + d.name;
 				var found = me.JQObj.filter("[data-lang='" + key + "']");
-				found.text(d.data);
+				found.html(d.data);
 
 				lang[key] = d;
 			});
@@ -127,6 +129,7 @@ LDLanguage.prototype.invoke = function(JQObj, options) {
 LDLanguage.prototype.onClickEdit = function(obj) {
 	var me = this;
 	var self = $(obj);
+	LDL.lastObj = self;
 
 	// -- data.lang="parent.name"
 	var lang = self.attr('data-lang');
@@ -141,10 +144,11 @@ LDLanguage.prototype.onClickEdit = function(obj) {
 	area.css('width', pos.width);
 	area.css('height', me.MIN_HEIGHT);
 
-	LDL.formLangSet.data = self.text();
+	LDL.formLangSet.data = self.html();
 	LDL.formLangSet.lang = me.options.default_lang;
 	LDL.formLangSet.parent = key.parent;
 	LDL.formLangSet.name = key.name;
+
 
 	area.show();
 	LDL.formLangSet.dataObj.focus();
