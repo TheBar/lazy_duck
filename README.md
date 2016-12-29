@@ -74,3 +74,27 @@ LDCategories
 LDRadio
 
 9. lazyduck_lang
+
+2016/12/28일 업데이트
+1. LDDataView 생성
+생성된 View의 click 이벤트등을 내부에서 처리하기 힘들어서 만듬
+LD Instance에 포함되어 있다
+LD.getView(id);
+LD.getValue(id);
+
+2. templateLD를 추가
+LDDataView의 gen 기능등을 합해서 편리하게 사용할수 있음
+LDArea의 템플릿도 기본 templateLD로 변경됨
+템플릿으로 생성된 모든 녀석들은 데이터가 저장되게 되어 있음
+그리고 value에 id가 추가됨
+onclick="onClick(<%= id %>)"
+위와 같이 사용할수 있음
+
+function onClick(id) {
+	var value = this.getValue(id);
+	var view = this.getView(id);
+}
+
+2016/12/29일 업데이트
+1. ajaxSubmit file 처리 부분 추가 multipart일때 파일 날릴수 있음, 현재 다중 파일 처리는 안되어 있음
+2. LDLang Ctrl+enter, 입력후 바로 바뀌는것 수정

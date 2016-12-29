@@ -300,6 +300,8 @@ $.fn.toJSON = function(validate, includeEmpty) {
 			}
 		} else if('hidden' == type) {
 			save = true;
+		} else if('file' == type) {
+			save = false; // -- FormData will be processed at the end
 		}
 
 		// -- Ignored to save
@@ -334,6 +336,24 @@ $.fn.toJSON = function(validate, includeEmpty) {
 
 		}
 	});
+
+	// -- If its multipart? convert data as FormData
+	// -- $.ajax need special attributes to send this data correctly
+	if(multipart) {
+		var data = new FormData();
+		_.each(obj, function(v, k) {
+			data.append(k, v);
+		});
+
+		// -- Process file
+		jq.find("input[type='file']").each(function() {
+			var fObj = $(this);
+			var name = fObj.attr('name');
+			data.append(name, this.files[0]); // -- Appending just first file, TODO ??
+		});
+
+		obj = data;
+	}
 
 	return obj;
 };
@@ -1165,7 +1185,7 @@ $.fn.submitAjax = function(success, failure, submitNow, opt) {
 		if(opt && opt.showLoading)
 			opt.showLoading();
 
-		$.ajax({
+		var q = {
 			type: type,
 			url: url,
 			data: data,
@@ -1197,7 +1217,14 @@ $.fn.submitAjax = function(success, failure, submitNow, opt) {
 					console.error("SubmitAjax Error", err);
 				}
 			}
-		});
+		};
+
+		if(data instanceof FormData) {
+			q.processData = false;
+			q.contentType = false;
+		}
+
+		$.ajax(q);
 
 		return false;
 	});
@@ -1258,4 +1285,3 @@ var LDAssert = {
 		LDAssert.assert(any && 0 != any, message);
 	}
 };
-

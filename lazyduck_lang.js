@@ -86,7 +86,8 @@ LDLanguage.prototype.invoke = function(JQObj, options) {
 			me.hide();
 			alert('Success');
 
-			LDL.lastObj.val(LDL.formLangSet.data);
+			// -- Refresh
+			LDL.lastObj.html(LDL.formLangSet.data);
 		} else {
 			if('undefined' == typeof data) {
 				alert('Error while Setting with api, check you api permission.');
@@ -120,8 +121,14 @@ LDLanguage.prototype.invoke = function(JQObj, options) {
 
 	// -- TextArea - ESC
 	LDL.formLangSet.obj.find('textarea').keyup(function(e) {
+		// -- ESC
 		if(27 == e.keyCode)
 			me.hide();
+
+		// -- Ctrl + enter
+		if(13 == e.keyCode && true == e.ctrlKey) {
+			LDL.formLangSet.submit();
+		}
 	});
 };
 
@@ -152,6 +159,7 @@ LDLanguage.prototype.onClickEdit = function(obj) {
 
 	area.show();
 	LDL.formLangSet.dataObj.focus();
+	LDL.formLangSet.dataObj[0].selectionStart = 0;
 
 	// -- Get
 	LDL.formLangGet.lang = me.options.default_lang;
