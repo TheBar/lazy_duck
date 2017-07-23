@@ -10,17 +10,21 @@ underscore.js
 1. JQuery 확장 코드
 2. LDForm
 3. LDArea
-4. LDData
+4. LDDataView
+5. LDListView
+6. LDAssert
+7. LDEvent
+8. LDAssert
 
 예 :
 
 html
 ----
-<xmp>
+<pre>
 <form id="formCreate" class="LDForm">
 	<input type="text" name="search" />
 </form>
-</xmp>
+</pre>
 
 js
 ----
@@ -36,7 +40,7 @@ console
 'The search value'
 
 Live Example
-http://dm1430720111901.fun25.co.kr/lazyduck/
+http://www.sdlabs.kr/lazyduck/
 
 2016/11/22 업데이트
 1. LDAttribute 생성, data-xxx={json} 형태의 문자열을 파싱하기 위함
@@ -98,3 +102,21 @@ function onClick(id) {
 2016/12/29일 업데이트
 1. ajaxSubmit file 처리 부분 추가 multipart일때 파일 날릴수 있음, 현재 다중 파일 처리는 안되어 있음
 2. LDLang Ctrl+enter, 입력후 바로 바뀌는것 수정
+
+2017/03/02 업데이트
+1. LDForm data-sync 추가 : editor 등에서 toJSON 이전에 호출되어야 할 sync 맞추기용, false 이면 submit 취소함
+
+2017/06/29 업데이트
+1. toJSON file이 없을 경우 추가하지 않음
+2. toJSON file의 갯수만큼 form data에 append를 함 - 여러개의 파일을 올릴때 쓸수 있을듯 하나, 아직 테스트는 안해봄
+3. ui checkbox 부분 추가됨 기존에 만들었는데 합치지 않았음
+4. ui tag에서 data-value - default 기능 추가함, addValue하는걸로 해서 자연스럽게 처리가 됨
+
+2017/07/23 업데이트
+1. toJSON type Email 추가
+2. LDForm.clear exclude 추가
+3. LDDataView.getView data-id 보다 id를 우선시 찾음
+4. LDDataView.removeView, removeValue 추가
+5. .LDClick 기능 추가 - append 등으로 새로 추가되는 object에서 클릭 기능을 생성 - 부모가 window가 되어 버리는 문제가 있음
+6. templateLD gen을 넣을지 말지 결정 가능 - listView 같은 경우 직접 생성하기 때문에 LD 자체의 gen을 사용할수 없다
+7. LDEvent, LDStatus 추가 - 이벤트 리스너, 상태 변경, 둘다 observer

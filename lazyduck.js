@@ -26,7 +26,7 @@ $.fn.setV = function(value, byForce) {
 	if('input' == tagName)
 		type = self.attr("type");
 
-	if('hidden' == type || 'text' == type || 'textarea' == type || 'date' == type || 'email' == type || 'password' == type) {
+	if('hidden' == type || 'text' == type || 'textarea' == type || 'date' == type || 'email' == type || 'password' == type || 'email' == type) {
 		self.val(value);
 		return true;
 	} else if('select' == type) {
@@ -96,7 +96,7 @@ $.fn.getV = function(byForce) {
 
 	var disabled = self.attr('disabled');
 	if(!disabled || byForce) {
-		if ('hidden' == type || 'text' == type || 'textarea' == type || 'select' == type) {
+		if ('hidden' == type || 'text' == type || 'textarea' == type || 'select' == type || 'email' == type) {
 			value = self.val();
 		} else if ('radio' == type) {
 			for(var i = 0; i < self.length; i ++) {
@@ -349,9 +349,14 @@ $.fn.toJSON = function(validate, includeEmpty) {
 		jq.find("input[type='file']").each(function() {
 			var fObj = $(this);
 			var name = fObj.attr('name');
-			data.append(name, this.files[0]); // -- Appending just first file, TODO ??
-		});
 
+			// -- TODO - multiple files
+			// -- includeEmpty ignored with file, if not uploaded? not appended
+			_.each(this.files, function(f) {
+				data.append(name, f);
+			}) ;
+		});
+		
 		obj = data;
 	}
 
@@ -489,12 +494,25 @@ LDForm.prototype.addProp = function(name) {
 };
 
 // -- Clear the values
-LDForm.prototype.clear = function() {
+LDForm.prototype.clear = function(arrExcludeName) {
 	this.obj.find('input, textarea, select').each(function() {
 		var self = $(this);
 		var type = self.attr('type');
 
-		if('submit' != type) {
+		var exclude = false;
+
+		if('submit' == type) {
+			exclude = true;
+		}
+
+		// -- Exclude condition
+		if(false === exclude && arrExcludeName) {
+			if(_.contains(arrExcludeName, self.attr('name'))) {
+				exclude = true;
+			}
+		}
+
+		if(!exclude) {
 			self.val('');
 		}
 	});
@@ -778,7 +796,7 @@ LDDataSource.prototype.setData = function(data) {
 
 LDDataSource.prototype.isEmpty = function() {
 	if(this.list) {
-		if(0 == this.list.length)
+		if(0 === this.list.length || 0 === Object.keys(this.list).length)
 			return true;
 		return false;
 	}
@@ -858,7 +876,9 @@ LDDataView.prototype.setValue = function(value, id) {
 };
 
 LDDataView.prototype.getView = function(id) {
-	var view = $('[data-id="' + id + '"]');
+	// -- find #id first and next data-id=""
+	var view = $("#" + id);
+	0 === view.length && (view = $('[data-id="' + id + '"]'));
 	return view;
 };
 
@@ -869,10 +889,24 @@ LDDataView.prototype.getValue = function(id) {
 	return false;
 };
 
+LDDataView.prototype.removeValue = function(id) {
+	if(this.map.hasOwnProperty(id)) {
+		delete this.map[id];
+		return true;
+	}
+
+	return false;
+};
+
+LDDataView.prototype.removeView = function(id) {
+	this.getView(id).remove();
+};
+
 LazyDuck = function() {
 	this.prefix = "LD";
 	this.postForm = "Form";
 	this.postArea = "Area";
+	this.postClick = "Click";
 	this.postTemplate = "Template";
 
 	this.DATA_NAME = 'data-name';
@@ -904,6 +938,8 @@ LazyDuck.prototype.invoke = function(options) {
 		if(options.postTemplate) {
 			this.postTemplate = options.postTemplate;
 		}
+
+		options.postClick && (this.postClick = options.postClick);
 	}
 
 	this.reinvoke();
@@ -963,6 +999,9 @@ LazyDuck.prototype.reinvoke = function() {
 
 		me[id] = _.templateLD(self.html());
 	});
+
+	// -- LDClick with body
+	this.LDClick($('body'), this);
 
 	// -- User custom types
 	_.each(this.listTypes, function(type) {
@@ -1033,6 +1072,26 @@ LazyDuck.prototype.getValue = function(id) {
 	return this._dataView.getValue(id);
 };
 
+// -- Just simple initial
+LazyDuck.prototype.LDClick = function(jqObj, parent) {
+	var self = jqObj;
+
+	var classClick = '.' + this.prefix + this.postClick;
+	if(!parent)
+		parent = jqObj;
+
+	// -- LDClick
+	var click = self.find(classClick).addBack(classClick);
+	click.each(function() {
+		var me = this;
+		var self = $(this);
+		self.click(function() {
+			var onclick = self.data('onclick');
+			eval(onclick);
+		});
+	});
+};
+
 
 var LD = new LazyDuck();
 
@@ -1076,10 +1135,14 @@ _.mixin({
 	// -- Enhance its value with { id: 'LDID_1' }, can use it as generated
 	templateLD: function(str) {
 		var __internal = _.template(str);
-		return function(value) {
-			var include = _.isObject(value);
-			LD.gen(value, include); // -- Save its value in LDID_X
-			return __internal(value); // -- Then return the templated view, you can use <%= id %> as you wish!
+		return function(value, gen) {
+			if(false === gen) {
+				return __internal(value);
+			} else {
+				var include = _.isObject(value);
+				LD.gen(value, include); // -- Save its value in LDID_X
+				return __internal(value); // -- Then return the templated view, you can use <%= id %> as you wish!
+			}
 		}
 	},
 
@@ -1153,7 +1216,22 @@ $.fn.submitAjax = function(success, failure, submitNow, opt) {
 		var url = me.attr('action');
 		var type = me.attr('method');
 		var preventSubmit = me.attr('data-prevent-submit');
-		var data = me.toJSON();
+
+		// -- When sync
+		var whenSync = me.attr('data-sync');
+		if(whenSync && 0 < whenSync.length) {
+			var ret = eval(whenSync);
+			if(false === ret)
+				return false;
+		}
+
+		// -- includeEmpty
+		var includeEmpty = false;
+		if(opt && opt.hasOwnProperty('includeEmpty')) {
+			includeEmpty = opt.includeEmpty;
+		}
+
+		var data = me.toJSON(true, includeEmpty);
 
 		// -- Validation failed
 		if(!data)
@@ -1245,7 +1323,14 @@ $.fn.submitConfirm = function() {
 		// -- Before submit callback
 		var beforeSubmit = me.attr('data-before-submit');
 		if(beforeSubmit && 0 < beforeSubmit.length) {
-			var ret = eval(beforeSubmit);
+			var data = me.toJSON(true, false);
+			try {
+				var ret = eval(beforeSubmit);
+			} catch(e) {
+				console.error(e);
+				event.preventDefault();
+				return false;
+			}
 			if(false === ret) {
 				event.preventDefault();
 				return false;
@@ -1283,5 +1368,76 @@ var LDAssert = {
 
 	notZero: function(any, name) {
 		LDAssert.assert(any && 0 != any, message);
+	}
+};
+
+// -- Event observer
+var LDEvent = function() {
+	this.map = {};
+};
+
+LDEvent.prototype.listen = function(event, cb) {
+	if(this.map.hasOwnProperty(event)) {
+		this.map[event].push(cb);
+	} else {
+		this.map[event] = [cb];
+	}
+};
+
+LDEvent.prototype.fire = function(event, data) {
+	var me = this;
+	setTimeout(function() {
+		if(me.map.hasOwnProperty(event)) {
+			_.each(me.map[event], function(cb) {
+				cb(event, data);
+			});
+		}
+	}, 1);
+};
+
+LDEvent.prototype.clear = function(event) {
+	if(this.map.hasOwnProperty(event)) {
+		delete this.map[event];
+	}
+};
+
+// -- Status observer
+var LDStatus = function() {
+	this.map = {};
+	this.status = {};
+};
+
+// -- set status, fire event only when status changed
+LDStatus.prototype.set = function(name, status) {
+	var me = this;
+	var prevStatus = this.status[name];
+	if(prevStatus !== status) {
+		this.status[name] = status;
+
+		// -- notify
+		setTimeout(function() {
+			if(me.map.hasOwnProperty(name)) {
+				_.each(me.map[name], function(cb) {
+					cb(name, {prev: prevStatus, status: status});
+				});
+			}
+		}, 1);
+	}
+};
+
+// -- Get status, false
+LDStatus.prototype.get = function(name) {
+	if(this.status.hasOwnProperty(name))
+		return this.status[name];
+
+	return false;
+};
+
+// -- cb will have name, {prevStatus, status}
+LDStatus.prototype.listen = function(name, cb) {
+	if(this.map.hasOwnProperty(name)) {
+		this.map[name].push(cb);
+	} else {
+		this.map[name] = [cb];
 	}
 };

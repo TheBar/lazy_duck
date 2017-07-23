@@ -205,9 +205,11 @@ LDOrder.prototype.setOrder = function(name, order) {
  * class onClickTags 는 중요함!! 이녀석에게 click 이벤트를 검
  * data-value도 꼭 넣어줘야함
  *
+ * input의 data-value는 기존의 데이터를 넣으면 됨 data-value="{{ form.getValue('tags') }}"
+ *
  1.
  <div id="areaTags"></div>
- <input name="tagsInput" type="text" placeholder="TAGS) Any words..." data-template="#templateTags" data-name="tags" data-view="#areaTags"/>
+ <input name="tagsInput" type="text" placeholder="TAGS) Any words..." data-template="#templateTags" data-name="tags" data-view="#areaTags" data-value="DEF|VALUES"/>
 
  2.
  <script type="text/html" id="templateTags">
@@ -269,6 +271,16 @@ LDTags.prototype.invoke = function(JQObject) {
 	}
 
 	// -- Default value
+	// -- data-value - "ABCD|VVVV|DDDD" - real value which in DB
+	var valueDB = this.obj.data('value');
+	if(valueDB && 0 < valueDB.length) {
+		var values = valueDB.split(this.delimiter);
+
+		for (var i = 0; i < values.length; i++) {
+			var item = values[i];
+			this.addValue(item);
+		}
+	}
 };
 
 LDTags.prototype.eventInvoked = function() {
@@ -660,6 +672,8 @@ $.fn.LDRadio = function(options) {
  * 해당 인스턴스를 각각의 프로젝트에 적용하는 방식이 가장 적합할것으로 보인다.
  *
  * 아래에는 기본적인 사용법을 만들어놓았다. list 형 JQObj 형
+ *
+ * disabled 추가 - radio check tag 클릭 이벤트를 안걸리게 함
  * @constructor
  */
 
@@ -673,6 +687,12 @@ LDUIGeneral.prototype.invoke = function(opts) {
 	// -- Assert
 	LDAssert.assert(opts, 'LDUIGeneral.invoke invalid option');
 	me.options = opts;
+	me.options.parent = me; // -- Save parent
+
+	// -- Template
+	if(opts.hasOwnProperty('template')) {
+		opts.template = _.template(opts.template);
+	}
 
 	// -- Initialize
 	if(opts.hasOwnProperty('init')) {
@@ -713,23 +733,37 @@ LDUIGeneral.prototype.invoke = function(opts) {
 var _thsBaseRadioOptions = {
 	render: function(item, key, list, opts, parent) {
 		// -- If item is object -> consider it as input radio object
+		var r = null;
 		if(_.isObject(item)) {
 			var obj = $(item);
 			var value = obj.val();
 			var title = obj.attr('title');
 
-			var r = opts.template({k: value, v: title});
-			return r;
+			r = opts.template({k: value, v: title});
 		} else {
 			// -- Otherwise its just key value
-			var r = opts.template({k: key, v: item});
-			return r;
+			r = opts.template({k: key, v: item});
 		}
+
+		return r;
 	},
 	onRenderedObj: function(item, key, list, opts, parent) {
-		item.click(function() {
-			opts.eventOnClick(item, key, list, opts, parent);
-		});
+		// -- Checked with dataSource
+		var dataItem = list[key];
+
+		if(_.isObject(dataItem)) {
+			// -- Where dataSource is JQObject, check if its 'checked' with attribute
+			// -- where dataItem is pure HTML tag
+			if(dataItem.checked) {
+				opts.eventOnClick(item, null, null, opts, parent);
+			}
+		}
+
+		if(true !== opts.disabled) {
+			item.click(function () {
+				opts.eventOnClick(item, key, list, opts, parent);
+			});
+		}
 	},
 
 	// -- Custom
@@ -766,6 +800,300 @@ var _thsBaseRadioOptions = {
 var LDUIRadio = function(customOptions) {
 	this.general = new LDUIGeneral();
 
-	this.radioOptions = _.extend(customOptions, _thsBaseRadioOptions);
+	this.radioOptions = _.extend(_thsBaseRadioOptions, customOptions);
 	this.general.invoke(this.radioOptions);
+};
+
+var _thsBaseCheckOptions = {
+	render: function(item, key, list, opts, parent) {
+		// -- If item is object -> consider it as input radio object
+		if(_.isObject(item)) {
+			var obj = $(item);
+			var value = obj.val();
+			var title = obj.attr('title');
+
+			var r = opts.template({k: value, v: title});
+			return r;
+		} else {
+			// -- Otherwise its just key value
+			var r = opts.template({k: key, v: item});
+			return r;
+		}
+	},
+
+	onRenderedObj: function(item, key, list, opts, parent) {
+		// -- Checked with dataSource
+		var dataItem = list[key];
+
+		if(_.isObject(dataItem)) {
+			// -- Where dataSource is JQObject, check if its 'checked' with attribute
+			// -- where dataItem is pure HTML tag
+			if(dataItem.checked) {
+				opts.setSelected(item, true);
+			}
+		}
+
+		// -- Disabled => prevent to click
+		if(true !== opts.disabled) {
+			item.click(function () {
+				opts.eventOnClick(item, key, list, opts, parent);
+			});
+		}
+	},
+
+	// -- Custom
+	eventOnClick: function(item, key, list, opts, parent) {
+		var selectedBefore = opts.isSelected(item, key, list, opts, parent);
+		var selected = !selectedBefore;
+		opts.setSelected(item, selected);
+
+		// -- set / unset original value
+		opts.setOriginalValue(item.attr('data-value'), selected, opts, parent);
+	},
+
+	setOriginalValue: function(value, selected, opts, parent) {
+		// -- Only if it has 'filter' methods, which means its JQObject as dataSource
+		if(opts.dataSource instanceof jQuery)
+			opts.dataSource.filter('[value="' + value + '"]').prop('checked', selected);
+	}
+};
+
+var LDUICheck = function(customOptions) {
+	this.general = new LDUIGeneral();
+
+	this.radioOptions = _.extend(customOptions, _thsBaseCheckOptions);
+	this.general.invoke(this.radioOptions);
+};
+
+var _theBaseTagsOptions = {
+	render: function(item, key, list, opts, parent) {
+		// -- Should be a string
+		return opts.template({k: item});
+	},
+
+	onRenderedObj: function(item, key, list, opts, parent) {
+		// -- Disabled => prevent to click
+		if(true !== opts.disabled) {
+			item.click(function () {
+				opts.eventOnClick(item, key, list, opts, parent);
+			});
+		}
+	},
+
+	// -- Custom
+	eventOnClick: function(item, key, list, opts, parent) {
+		var value = item.text();
+		item.remove();
+
+		opts.removeOriginal(value, opts, parent);
+	},
+
+	removeOriginal: function(value, opts, parent) {
+		delete opts.dataMap[value];
+		var joined = _.keys(opts.dataMap).join(opts.delimiter);
+		opts.orgDataSource.val(joined);
+
+		// -- Event
+		if(opts.hasOwnProperty('onchange')) {
+			opts.onchange(value, opts.dataMap, opts, parent);
+		}
+	},
+
+	addOriginal: function(value, opts, parent) {
+		if(opts.dataMap.hasOwnProperty(value))
+			return false;
+
+		// -- Validate
+		if(opts.hasOwnProperty('validate')) {
+			if(false === opts.validate(value)) {
+				var title = 'Failed to validate the input!';
+				if(opts.hasOwnProperty('validateTitle'))
+					title = opts.validateTitle;
+
+				alert(title);
+				return false;
+			}
+		}
+
+		opts.dataMap[value] = true;
+		var joined = _.keys(opts.dataMap).join(opts.delimiter);
+		opts.orgDataSource.val(joined);
+
+		// -- Event
+		if(opts.hasOwnProperty('onchange')) {
+			opts.onchange(value, opts.dataMap, opts, parent);
+		}
+
+		return true;
+	},
+
+	addView: function(value, opts, parent) {
+		var obj = $(opts.render(value, null, null, opts, parent));
+		opts.onRenderedObj(obj, null, null, opts, parent);
+		opts.view.append(obj);
+	},
+
+	init: function(opts, parent) {
+		opts.delimiter = opts.delimiter ? opts.delimiter : '|';
+
+		// -- Save dataSource as input
+		if(_.isObject(opts.dataSource) && opts.dataSource instanceof jQuery) {
+			opts.orgDataSource = opts.dataSource;
+			var data = opts.dataSource.val();
+
+			if(!data || '' == data) {
+				opts.dataSource = [];
+			} else {
+				opts.dataSource = data.split(opts.delimiter);
+			}
+
+			// -- For easy of use dataSource add / remove
+			opts.dataMap = {};
+			_.each(opts.dataSource, function(d) {
+				opts.dataMap[d] = true;
+			});
+		} else {
+			console.error('Invalid dataSource it should be a input with hidden');
+		}
+
+		// -- Input text initializing
+		if(opts.hasOwnProperty('input') && opts.input instanceof jQuery) {
+			opts.input.off('keypress').on('keypress', function(e) {
+				if(13 == e.keyCode) {
+					e.preventDefault();
+					var v = opts.input.val().trim();
+					if(!v || '' == v)
+						return false;
+					if(opts.addOriginal(v, opts, parent))
+						opts.addView(v, opts, parent);
+					opts.input.val('');
+					return false;
+				}
+			});
+		}
+	},
+
+	// -- Remove all
+	clear: function() {
+		var me = this;
+
+		// -- Clear data
+		this.dataMap = {};
+
+		// -- Clear original
+		this.orgDataSource.val('');
+
+		// -- Clear view
+		if(this.hasOwnProperty('view'))
+			this.view.empty();
+
+		// -- Notify change
+		if(this.hasOwnProperty('onchange')) {
+			this.onchange(null, this.dataMap, this, this.parent);
+		}
+	},
+	delimiter: '|'
+};
+
+var LDUITags = function(customOptions) {
+	this.general = new LDUIGeneral();
+
+	this.options = _.extend(customOptions, _theBaseTagsOptions);
+	this.general.invoke(this.options);
+};
+
+$.fn.LDUITags = function(options) {
+	options.view = this;
+	var tags = new LDUITags(options);
+	return tags;
+};
+
+
+/**
+ * ListView
+ * Almost same as LDArea
+ * but has 'add', 'update'
+ * LDClick on added item is for certain apps likes chrome extension, which does not 'onclick' on the html
+ * @param prefix
+ * @constructor
+ */
+
+// -- hold data and view, add, delete, event
+var LDListView = function(prefix) {
+	this.obj = null;
+	this.template = null;
+
+	this.dataView = new LDDataView();
+	this.dataView.prefix = 'LVID';
+	prefix && (this.dataView.prefix = prefix); // -- Overwrite if argument exist
+};
+
+LDListView.prototype.invoke = function(jqArea, template) {
+	this.obj = jqArea;
+	this.template = template;
+};
+
+LDListView.prototype.add = function(obj) {
+	var id = this.dataView.gen(obj, false);
+	var strObj = {item: obj, id: id};
+	this.dataView.setValue(obj, id);
+
+	var htmlObj = this.render(strObj, false);
+
+	this.obj.append(htmlObj);
+};
+
+LDListView.prototype.del = function(id) {
+	this.dataView.removeView(id);
+	this.dataView.removeValue(id);
+};
+
+LDListView.prototype.getCount = function() {
+	return Object.keys(this.dataView.map).length;
+};
+
+LDListView.prototype.pop = function() {
+	var key = Object.keys(this.dataView.map)[0];
+	var value = this.dataView.getValue(key);
+	this.del(key);
+	return value;
+};
+
+// -- Update value and view with argument
+LDListView.prototype.update = function(id, valueObj) {
+	if(!this.dataView.map.hasOwnProperty(id)) {
+		console.error('ListView.update does not have such id : ' + id);
+		return false;
+	}
+
+	this.dataView.setValue(valueObj, id);
+	var objHtml = this.render({item: valueObj, id: id}, false);
+	var oldView = this.dataView.getView(id);
+	oldView.replaceWith(objHtml);
+};
+
+LDListView.prototype.render = function(obj, optionTemplate) {
+	var me = this;
+	var html = this.template(obj, optionTemplate);
+
+	var htmlObj = $(html);
+	var click = htmlObj.find(".LDClick").addBack(".LDClick");
+	click.each(function() {
+		var self = $(this);
+		self.click(function() {
+			var onclick = self.data('onclick');
+			var parent = me;
+			eval(onclick);
+		});
+	});
+
+	return htmlObj;
+};
+
+// -- Remove all
+LDListView.prototype.clear = function() {
+	var me = this;
+	_.each(this.dataView.map, function(item, key) {
+		me.del(key);
+	});
 };
