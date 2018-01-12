@@ -120,3 +120,8 @@ function onClick(id) {
 5. .LDClick 기능 추가 - append 등으로 새로 추가되는 object에서 클릭 기능을 생성 - 부모가 window가 되어 버리는 문제가 있음
 6. templateLD gen을 넣을지 말지 결정 가능 - listView 같은 경우 직접 생성하기 때문에 LD 자체의 gen을 사용할수 없다
 7. LDEvent, LDStatus 추가 - 이벤트 리스너, 상태 변경, 둘다 observer
+
+2018/01/12 업데이트
+1. LDTemplate 기본 generate 없앰
+2. LDArea에서만 generate 됨
+3. LDArea는 setDataSource 할때마다 이전 dataView를 지움 - 오랫동안 화면을 보고 있는 경우 많은 데이터가 쌓이는 문제 방지

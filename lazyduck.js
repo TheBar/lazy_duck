@@ -562,6 +562,8 @@ var LDArea = function(JQObj) {
 
 	if(JQObj)
 		this.invoke(JQObj);
+
+	this.genIDSave = {from: 0, to: 0};
 };
 
 LDArea.prototype.invoke = function(JQObj) {
@@ -687,7 +689,7 @@ LDArea.prototype.renderData = function(data) {
 	return str;
 };
 
-// -- For each area Object extend this!!
+// -- For each area Object extend this!!, recent rendered data's key should be saved in other place
 LDArea.prototype.render = function() {
 	var me = this;
 	var list = this.dataSource.getList();
@@ -707,6 +709,13 @@ LDArea.prototype.render = function() {
 		return;
 	}
 
+	// -- Remove dataView
+	if(this.genIDSave.from !== 0 && this.genIDSave.from <= this.genIDSave.to) {
+		LD._dataView.clearValues(this.genIDSave.from, this.genIDSave.to);
+	}
+
+	this.genIDSave.from = LD._dataView._genId;
+
 	if(list) {
 		// -- List Item
 		var result = '';
@@ -724,6 +733,8 @@ LDArea.prototype.render = function() {
 	} else if(data) {
 		this.set(me.renderData(data));
 	}
+
+	this.genIDSave.to = LD._dataView._genId - 1;
 };
 
 /**
@@ -902,6 +913,19 @@ LDDataView.prototype.removeView = function(id) {
 	this.getView(id).remove();
 };
 
+LDDataView.prototype.clearValues = function(from, to) {
+	var countDeleted = 0;
+	for(var i = from; i <= to; i++) {
+		var id = this.prefix + '_' + i;
+		if(this.map.hasOwnProperty(id)) {
+			delete this.map[id];
+			countDeleted++;
+		}
+	}
+
+	console.log('Count Deleted from ' + from + ', to ' + to + " : " + countDeleted);
+};
+
 LazyDuck = function() {
 	this.prefix = "LD";
 	this.postForm = "Form";
@@ -997,7 +1021,9 @@ LazyDuck.prototype.reinvoke = function() {
 		if(name)
 			id = name;
 
-		me[id] = _.templateLD(self.html());
+		// -- _.templateLD to _.template, where class LDTemplate does not need generated ID, only LDArea need it
+		// -- This might cause some error
+		me[id] = _.template(self.html());
 	});
 
 	// -- LDClick with body

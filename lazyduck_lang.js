@@ -66,7 +66,13 @@ LDLanguage.prototype.invoke = function(JQObj, options) {
 	this.options = options;
 
 	if(true === this.options.edit) {
+		// -- ClickEvent
 		this.JQObj.click(function() {
+			me.onClickEdit(this);
+		});
+
+		// -- Right Click
+		this.JQObj.contextmenu(function() {
 			me.onClickEdit(this);
 		});
 	}
